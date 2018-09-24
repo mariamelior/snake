@@ -1,0 +1,9 @@
+#field {
+    border: 2px grey solid;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    border: 1px grey dashed;
+}
