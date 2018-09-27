@@ -2,17 +2,34 @@ import * as React from 'react';
 import * as ReactDOM from "react-dom";
 
 enum STEP {
-    DOWN, LEFT, RIGHT, UP
+    LEFT = 37,
+    UP = 38,
+    RIGHT = 39,
+    DOWN = 40
+}
+
+enum FIELD {
+    EMPTY = 0,
+    SNAKE = 1,
+    APPLE = 2 
 }
 
 interface IState {
     sizeX: number;
     sizeY: number;
+    speed: number;
     snake: number[][];
-    step: STEP;   
-}
+    step: STEP;
+    field: FIELD[][];
+    hasError: boolean;
+    errorMessage: string;
+    isStart: boolean;
+    isFinish?: boolean;
+    timer?: any;
+    apples: number;
+} 
 
-export class App extends React.Component<any, IState> {
+export class App extends React.Component<{}, IState> {
     constructor(props) {
         super(props)
     }
@@ -21,76 +38,192 @@ export class App extends React.Component<any, IState> {
         sizeX: 10,
         sizeY: 10,
         snake: [[0,0]],
-        step: STEP.DOWN
+        step: STEP.DOWN,
+        field: [],
+        hasError: false,
+        errorMessage: '',
+        isStart: false,
+        speed: 1,
+        apples: 0
+    }
+
+    startGame = () => {
+        let {sizeX, sizeY, field, snake, speed} = this.state;
+        field = new Array(sizeY);
+        for (let i=0; i<sizeY; i++) {
+            field[i] = (new Array(sizeX)).fill(FIELD.EMPTY);
+        }
+        field[0][0] = FIELD.SNAKE;
+        let app: Array<number> = this.generateApple(field);
+        field[app[0]][app[1]] = FIELD.APPLE;
+        var timer = setInterval(this.doStep, speed*1000);
+        this.setState({isStart:true, field, snake, step: STEP.DOWN , timer , apples: 0});
+
+        document.getElementById('field').focus();
     }
 
     endGame = () => {
-        alert('Sorry')
+        let {timer} = this.state;
+        clearInterval(timer);
+        this.setState({field: [], isStart: false, snake: [[0,0]], isFinish: true});
     }
 
-    process = (cur: Array<number>) => {
-        let {step, sizeY, sizeX} = this.state;
-        if (step == STEP.DOWN) {
-            if ((cur[1]+1) > sizeY) {
-                this.endGame();
-            } else return [cur[0], cur[1]+1]
+    onChangeField = (value:string, e) => {
+        let size: number = e.target.value;
+        let state = this.state;
+        state[value] = size;
+        this.setState(state);
+    }
+
+    onBlurField = (value:string) => { 
+        let size: number = parseInt(this.state[value]);
+        let state = this.state;
+        if (!size || size < 2) {
+            state[value] = 10;
+            state.hasError = true;
+            state.errorMessage = "Размер поля должен быть больше 1";
+        } else  {
+            state[value] = size;
         }
-        if (step == STEP.UP) {
-            if ((cur[1]-1) < 0) {
-                this.endGame();
-            } else return [cur[0], cur[1]-1]
+        this.setState(state);
+    }
+
+    onChangeSpeed = (e) => {
+        let speed: number = e.target.value; //TODO
+        this.setState({speed});
+    }
+
+    onBlurSpeed = () => {
+        let speed: number = parseFloat(this.state.speed); 
+        if (speed) {
+            this.setState({speed, hasError: false});
+        } else {
+            this.setState({hasError: true, errorMessage: "Некорректное значение", speed: 1});
         }
-        if (step == STEP.LEFT) {
-            if ((cur[0]-1) < 0) {
-                this.endGame();
-            } else return [cur[0]-1, cur[1]]
-        }
-        if (step == STEP.RIGHT) {
-            if ((cur[0]+1) > sizeX) {
-                this.endGame();
-            } else return [cur[0]+1, cur[1]]
-        }
+    }
+
+    onKeyEnter = (e) => {
+        let {step, snake} = this.state;
+        let newStep: STEP = e.keyCode;
+        if (newStep%2 != step%2 || snake.length === 1) {
+            this.setState({step:newStep})
+        } //TODO SPACE key
     }
 
     doStep = () => {
-        let {snake} = this.state;
-        let newStep: Array<number> = this.process(snake[0]);
-        if (snake.find(e => e[0] === newStep[0] && e[1] === newStep[1])) {
+        let {snake, field, apples} = this.state;
+        let newStep: Array<number> = this.processStep(snake[0]);
+        if (field[newStep[0]][newStep[1]] === FIELD.SNAKE) {
             this.endGame();
+            return;
         } else {
-            if (newStep) { //TODO no apple
-                snake.pop();
+            if (field[newStep[0]][newStep[1]] === FIELD.EMPTY) {
+                let last: Array<number> = snake.pop();
+                field[last[0]][last[1]] = FIELD.EMPTY;
+            } else if (field[newStep[0]][newStep[1]] === FIELD.APPLE) {
+                let app: Array<number> = this.generateApple(field);
+                field[app[0]][app[1]] = FIELD.APPLE;
+                apples++;
             }
             snake.unshift(newStep);
-            this.setState({snake});
-        }       
+            field[newStep[0]][newStep[1]] = FIELD.SNAKE;
+            this.setState({snake, field, apples});
+        }
     }
 
-    onkeyEnter = (e) => {
-        let step;
-        switch (e.keyCode) {
-            case 37: step = STEP.LEFT; break;
-            case 38: step = STEP.UP; break; 
-            case 39: step = STEP.RIGHT; break; 
-            case 40: step = STEP.DOWN; break; 
-            default: 
+    processStep = (cur: Array<number>): Array<number> => {
+        let {step, sizeY, sizeX} = this.state;
+        switch (step) {
+            case (STEP.DOWN): return [(cur[0]+1) % sizeY, cur[1]];
+            case (STEP.UP): return [(sizeY+cur[0]-1) % sizeY, cur[1]];
+            case (STEP.LEFT): return [cur[0], (sizeX+cur[1]-1) % sizeX];
+            case (STEP.RIGHT): return [cur[0], (cur[1]+1) % sizeX];
+            default:
         }
-        this.setState({step})
     }
-  
-    renderField = () => {
+
+    generateApple(field: FIELD[][]): Array<number> {
         let {sizeX, sizeY} = this.state;
-        for (let i=0; i<sizeX; i++) {
-            for (let i=0; i<sizeY; i++) {
-                return <span className="cell"/>
-            }
-        }
+        let x:number = Math.floor(Math.random() * sizeX);
+        let y: number = Math.floor(Math.random() * sizeY);
+          if (field[x][y] == FIELD.EMPTY) {
+            return [x,y]
+         } else {
+            this.generateApple(field);
+        }  
     }
+
+    renderField = () => {
+        let {sizeX, sizeY, field} = this.state;
+        return field.map((line, i) => {
+            return <div key={i}> 
+                {line.map((cell, j)=> {
+                    let cls: string = 'cell'
+                    if (cell === FIELD.APPLE) {
+                        cls+= " apple";
+                    } else if (cell === FIELD.SNAKE) {
+                        cls+= " snake";
+                    }
+                    return <div className={cls} key={`${i}-${j}`}/>
+                })}
+            </div>
+        }) 
+    }
+
     render() {
 
         return (
-            <div id="field">
-                {this.renderField()}
+            <div> 
+                <header>
+                    <label htmlFor="widthField">Ширина поля: </label>
+                    <input 
+                        disabled={this.state.isStart} 
+                        value={this.state.sizeX} 
+                        id="widthField"  placeholder="Ширина поля" 
+                        onChange={(e) => this.onChangeField('sizeX', e)}
+                        onBlur={() => this.onBlurField('sizeX')}/>
+                    <label htmlFor="heightField">Высота поля: </label>
+                    <input 
+                        disabled={this.state.isStart} 
+                        value={this.state.sizeY} 
+                        id="heightField" placeholder="Высота поля" 
+                        onChange={(e) => this.onChangeField('sizeY', e)}
+                        onBlur={() => this.onBlurField('sizeY')}/>
+                    <label htmlFor="heightField">Скорость игры(в секундах): </label>
+                    <input 
+                        disabled={this.state.isStart} 
+                        value={this.state.speed} 
+                        id="speed" placeholder="Скорость игры(в секундах)" 
+                        onChange={this.onChangeSpeed}/>
+                    <button onClick={this.startGame} disabled={this.state.isStart}>Старт</button>
+                    { this.state.isStart ? 
+                        <span>
+                            <button onClick={this.endGame}>Финиш</button>
+                            <span id="count"> Счет: {this.state.apples} </span>
+                        </span> 
+                    : null}
+                </header>
+
+                {
+                    this.state.hasError ? 
+                        <div className="error-box"> {this.state.errorMessage} </div>
+                    : null
+                }
+
+                <div id="field" onKeyDown={this.onKeyEnter} tabIndex={0}>
+                    {this.renderField()}
+                </div>
+
+                {
+                    this.state.isFinish ?
+                    <div className="popup">
+                        <div>
+                            <p>Игра закончена со счетом {this.state.apples}</p>
+                            <button onClick={() => this.setState({isFinish: false})}>ОК</button>
+                        </div>
+                    </div>
+                : null}
+
             </div>
         )
     }

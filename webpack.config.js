@@ -18,13 +18,13 @@ let loaders = [
 ];
 
 const webpackBaseConfig = {
+    mode: "development",
     entry: entrys,
     devtool: DEVTOOL,
     output: {
         filename: '[name].js',
         path: path.resolve(__dirname, 'build'),
-        publicPath: "/",
-        libraryTarget: "amd",
+        publicPath: "/"
     },
     module: {
         rules: loaders
@@ -33,7 +33,7 @@ const webpackBaseConfig = {
         modules: [
             path.resolve(__dirname, 'node_modules'),
         ],
-        extensions: [".js", ".ts", ".tsx", ".css", ".png", ".jpg"],
+        extensions: [".js", ".jsx", ".ts", ".tsx", ".css"],
     },
 
     devServer: {
