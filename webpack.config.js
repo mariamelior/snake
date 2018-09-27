@@ -1,16 +1,12 @@
 'use strict';
 const  path = require('path');
 
-const isProduction = process.argv.some(arg => arg === '-p' || arg === '--production');
-
 let DEVTOOL = 'hidden-source-map';
 
 let entrys = { 'snake' : path.resolve(__dirname, 'src/index.tsx')};
 
 const PORT = 8888;
 const HOST = '0.0.0.0';
-const URL = 'http://' + HOST + ':' + PORT;
-
 
 let loaders = [
     {test: /\.tsx?$/, loaders: ['ts-loader']},
@@ -35,7 +31,6 @@ const webpackBaseConfig = {
         ],
         extensions: [".js", ".jsx", ".ts", ".tsx", ".css"],
     },
-
     devServer: {
         host: HOST,
         port: PORT,

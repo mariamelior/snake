@@ -56,7 +56,7 @@ export class App extends React.Component<{}, IState> {
         field[0][0] = FIELD.SNAKE;
         let app: Array<number> = this.generateApple(field);
         field[app[0]][app[1]] = FIELD.APPLE;
-        var timer = setInterval(this.doStep, speed*1000);
+        var timer = setInterval(this.doStep, speed*100);
         this.setState({isStart:true, field, snake, step: STEP.DOWN , timer , apples: 0});
 
         document.getElementById('field').focus();
@@ -68,38 +68,29 @@ export class App extends React.Component<{}, IState> {
         this.setState({field: [], isStart: false, snake: [[0,0]], isFinish: true});
     }
 
-    onChangeField = (value:string, e) => {
-        let size: number = e.target.value;
+    onChangeParam = (type:string, e) => {
+        let value: number = e.target.value;
         let state = this.state;
-        state[value] = size;
+        state[type] = value;
         this.setState(state);
     }
 
     onBlurField = (value:string) => { 
-        let size: number = parseInt(this.state[value]);
+        let size: number = this.state[value];
         let state = this.state;
-        if (!size || size < 2) {
+        if (size < 2) {
             state[value] = 10;
             state.hasError = true;
             state.errorMessage = "Размер поля должен быть больше 1";
-        } else  {
-            state[value] = size;
-        }
-        this.setState(state);
-    }
-
-    onChangeSpeed = (e) => {
-        let speed: number = e.target.value; //TODO
-        this.setState({speed});
+            this.setState(state);
+        } else this.setState({hasError: false})
     }
 
     onBlurSpeed = () => {
-        let speed: number = parseFloat(this.state.speed); 
-        if (speed) {
-            this.setState({speed, hasError: false});
-        } else {
+        let {speed} = this.state;
+        if (speed<1) {
             this.setState({hasError: true, errorMessage: "Некорректное значение", speed: 1});
-        }
+        } else this.setState({hasError: false})
     }
 
     onKeyEnter = (e) => {
@@ -107,7 +98,7 @@ export class App extends React.Component<{}, IState> {
         let newStep: STEP = e.keyCode;
         if (newStep%2 != step%2 || snake.length === 1) {
             this.setState({step:newStep})
-        } //TODO SPACE key
+        } 
     }
 
     doStep = () => {
@@ -154,7 +145,7 @@ export class App extends React.Component<{}, IState> {
     }
 
     renderField = () => {
-        let {sizeX, sizeY, field} = this.state;
+        let {field} = this.state;
         return field.map((line, i) => {
             return <div key={i}> 
                 {line.map((cell, j)=> {
@@ -178,23 +169,24 @@ export class App extends React.Component<{}, IState> {
                     <label htmlFor="widthField">Ширина поля: </label>
                     <input 
                         disabled={this.state.isStart} 
-                        value={this.state.sizeX} 
+                        value={this.state.sizeX} type="number" 
                         id="widthField"  placeholder="Ширина поля" 
-                        onChange={(e) => this.onChangeField('sizeX', e)}
+                        onChange={(e) => this.onChangeParam('sizeX', e)}
                         onBlur={() => this.onBlurField('sizeX')}/>
                     <label htmlFor="heightField">Высота поля: </label>
                     <input 
                         disabled={this.state.isStart} 
-                        value={this.state.sizeY} 
+                        value={this.state.sizeY} type="number"
                         id="heightField" placeholder="Высота поля" 
-                        onChange={(e) => this.onChangeField('sizeY', e)}
+                        onChange={(e) => this.onChangeParam('sizeY', e)}
                         onBlur={() => this.onBlurField('sizeY')}/>
                     <label htmlFor="heightField">Скорость игры(в секундах): </label>
                     <input 
                         disabled={this.state.isStart} 
-                        value={this.state.speed} 
-                        id="speed" placeholder="Скорость игры(в секундах)" 
-                        onChange={this.onChangeSpeed}/>
+                        value={this.state.speed} type="number"
+                        id="speed" placeholder="Скорость игры(в долях секунд)" 
+                        onChange={(e) => this.onChangeParam('speed', e)}
+                        onBlur={this.onBlurSpeed}/>
                     <button onClick={this.startGame} disabled={this.state.isStart}>Старт</button>
                     { this.state.isStart ? 
                         <span>

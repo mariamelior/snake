@@ -5,12 +5,8 @@
   "author": {
     "name": "Fedorova Maria"
   },
-  "repository": {
-    "type": "git",
-    "url": "http://stash.ca.sbrf.ru/scm/bfs/test-fm-pl.git"
-  },
   "scripts": {
-    "start": "webpack-dev-server"
+    "start": "npm i && webpack-dev-server"
   },
   "dependencies": {
     "react": "16.3.1",
@@ -22,12 +18,10 @@
     "@types/react": "16.4.14",
     "@types/react-dom": "16.0.7",
     "css-loader": "1.0.0",
-    "es3ify-loader": "0.2.0",
     "path": "0.12.7",
     "react-dom": "16.5.1",
     "style-loader": "0.23.0",
     "ts-loader": "4.3.1",
-    "tslint": "^5.11.0",
     "typescript": "2.8.1",
     "webpack-cli": "3.1.0",
     "webpack-dev-server": "3.1.8"
